@@ -35,7 +35,7 @@ func ImportBooksFromCSVFile(csvFilePath string) error {
 		headerMap[strings.TrimSpace(strings.ToLower(name))] = idx
 	}
 
-	bookMetaStore := NewDocumentStore("books_nosql.json")
+	bookMetaStore := NewDocumentStore("../data/books_nosql.json")
 	importedCount := 0
 
 	for _, row := range records[1:] {
@@ -97,7 +97,7 @@ func ImportBooksFromCSVFile(csvFilePath string) error {
 			continue
 		}
 
-		docID := "book_meta_" + bookID
+		docID := bookID
 		metaBytes, _ := json.Marshal(struct {
 			BookID      string `json:"book_id"`
 			Title       string `json:"title"`

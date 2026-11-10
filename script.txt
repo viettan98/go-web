@@ -1,0 +1,80 @@
+Slide 1: Title Slide
+Nội dung trên slide: DATABASE INTERACTION: SQL & NoSQL – Presented by 19th Team.
+
+Script thuyết trình:
+
+English: "Good morning/afternoon everyone. Welcome to our presentation. We are the 19th Team, and today we are excited to present our project on Database Interaction: SQL & NoSQL, featuring our bookstore management application called GoBook."
+
+Tiếng Việt: "Xin chào thầy cô và các bạn. Chúng tôi là Nhóm 19, và hôm nay chúng tôi rất vui được trình bày về đề tài Tương tác cơ sở dữ liệu: SQL & NoSQL, thông qua ứng dụng quản lý nhà sách GoBook của nhóm."
+
+Slide 2: Team Members
+Nội dung trên slide: Team Members (Hoang Viet Tan, Le Nguyen Van Phat).
+
+Script thuyết trình:
+
+English: "Our team consists of two members: Hoang Viet Tan and Le Nguyen Van Phat. We collaborated closely to design and implement both the relational and non-relational layers of this project."
+
+Tiếng Việt: "Nhóm chúng tôi gồm 2 thành viên: Hoàng Việt Tân và Lê Nguyễn Văn Phát. Chúng tôi đã cùng nhau phối hợp thiết kế và triển khai cả tầng dữ liệu quan hệ và phi quan hệ cho dự án này."
+
+Slide 3: Introduction
+Nội dung trên slide: System objective (Bookstore application integrating both SQL and NoSQL).
+
+Script thuyết trình:
+
+English: "To introduce our project, the main objective of GoBook is to build a robust bookstore management system. Instead of relying on a single database type, we implement a hybrid architecture. This involves interacting with a relational database, MySQL, for structured data, using a document-based NoSQL store for flexible metadata, and ensuring smooth synchronization between them."
+
+Tiếng Việt: "Về phần giới thiệu, mục tiêu chính của GoBook là xây dựng một hệ thống quản lý nhà sách toàn diện. Thay vì phụ thuộc vào một loại CSDL duy nhất, chúng tôi áp dụng kiến trúc kết hợp (hybrid). Bao gồm việc tương tác với CSDL quan hệ MySQL cho dữ liệu cấu trúc, sử dụng NoSQL lưu trữ tài liệu cho metadata linh hoạt, và đảm bảo sự đồng bộ trơn tru giữa hai bên."
+
+Slide 4: Goals
+Nội dung trên slide: 1. SQL manages relational integrity & core entities. 2. NoSQL handles flexible JSON documents, reviews, carts.
+
+Script thuyết trình:
+
+English: "Our project goals are twofold. First, we use SQL to manage relational integrity, core business entities, and transactional persistence. Second, we leverage NoSQL to handle flexible JSON document storage, dynamic metadata, user reviews, and real-time shopping cart states efficiently."
+
+Tiếng Việt: "Mục tiêu dự án của chúng tôi có hai phần chính. Thứ nhất, SQL quản lý tính toàn vẹn quan hệ, các thực thể cốt lõi và tính bền vững của giao dịch. Thứ hai, NoSQL xử lý việc lưu trữ tài liệu JSON linh hoạt, metadata động, đánh giá của người dùng và trạng thái giỏ hàng theo thời gian thực."
+
+Slide 5: Relational Database (SQL)
+Nội dung trên slide: Schema tables (users, books, authors, categories, orders, order_items).
+
+Script thuyết trình:
+
+English: "Next, let's look at the Relational Database layer. We use MySQL with several key tables: users for account management and role-based access control; books for product information; authors and categories for catalog organization; and orders & order_items to record customer purchases. This guarantees strict data relationships and ACID compliance."
+
+Tiếng Việt: "Tiếp theo là tầng CSDL quan hệ. Chúng tôi dùng MySQL với các bảng chính: users quản lý tài khoản và phân quyền; books lưu thông tin sách; authors và categories quản lý tác giả và danh mục; cùng với orders & order_items ghi nhận đơn hàng. Điều này đảm bảo các mối quan hệ dữ liệu chặt chẽ và tuân thủ chuẩn ACID."
+
+Slide 6: Document-based Store (NoSQL)
+Nội dung trên slide: books_nosql.json, reviews_nosql.json, carts_nosql.json.
+
+Script thuyết trình:
+
+English: "For the NoSQL side, we utilize a file-based JSON document store consisting of three main files: books_nosql.json for extended book metadata like cover images and descriptions; reviews_nosql.json for user ratings and comments per book; and carts_nosql.json for managing temporary user shopping cart states dynamically."
+
+Tiếng Việt: "Về phía NoSQL, chúng tôi sử dụng kho tài liệu JSON gồm ba file chính: books_nosql.json lưu metadata mở rộng như ảnh bìa và mô tả; reviews_nosql.json lưu đánh giá và bình luận của người dùng theo từng sách; và carts_nosql.json quản lý trạng thái giỏ hàng tạm thời một cách linh hoạt."
+
+Slide 7: Comparison: SQL vs. NoSQL
+Nội dung trên slide: Structure, Relationships, Scalability, Consistency/Performance.
+
+Script thuyết trình:
+
+English: "Here is a quick comparison between SQL and NoSQL in our project. SQL uses a fixed schema, utilizes foreign keys for relationships, relies on vertical scaling, and prioritizes ACID data integrity. In contrast, NoSQL is schema-less and stores data as flexible JSON documents, supports horizontal scaling, and prioritizes high read/write performance following the BASE model."
+
+Tiếng Việt: "Đây là bảng so sánh nhanh giữa SQL và NoSQL trong dự án. SQL sử dụng schema cố định, dùng khóa ngoại để liên kết, hướng đến scale dọc và ưu tiên tính toàn vẹn ACID. Ngược lại, NoSQL không có schema cứng, lưu dữ liệu dưới dạng tài liệu JSON linh hoạt, hỗ trợ scale ngang và ưu tiên hiệu năng đọc/ghi cao theo mô hình BASE."
+
+Slide 8: Demonstration
+Nội dung trên slide: System live demo / screenshots.
+
+Script thuyết trình:
+
+English: "Moving on to the demonstration part, we will show how the GoBook application interacts with both databases in real-time—from executing SQL queries during user checkout and book management, to saving dynamic JSON payloads and audit logs into our NoSQL document store."
+
+Tiếng Việt: "Chuyển sang phần minh họa thực tế, chúng tôi sẽ cho thấy ứng dụng GoBook tương tác với cả hai CSDL như thế nào trong thời gian thực — từ việc thực thi câu lệnh SQL khi khách thanh toán và quản lý sách, cho đến việc lưu trữ payload JSON động và audit log vào kho tài liệu NoSQL."
+
+Slide 9: Conclusion & Q&A
+Nội dung sur slide: THANK YOU! (Questions & Discussion).
+
+Script thuyết trình:
+
+English: "In conclusion, combining SQL and NoSQL allows GoBook to benefit from both relational integrity and document-level flexibility. Thank you very much for listening! We are now open to any questions or feedback from you."
+
+Tiếng Việt: "Tóm lại, việc kết hợp SQL và NoSQL giúp GoBook tận dụng được cả tính toàn vẹn quan hệ lẫn sự linh hoạt ở cấp độ tài liệu. Cảm ơn thầy cô và các bạn đã lắng nghe! Chúng tôi rất mong nhận được câu hỏi và góp ý từ mọi người."

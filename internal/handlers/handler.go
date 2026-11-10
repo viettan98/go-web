@@ -40,6 +40,7 @@ type BookMeta struct {
 	ImageURL string `json:"image_url"`
 }
 
+// NewAppHandler
 func NewAppHandler() *AppHandler {
 	h := &AppHandler{
 		CartStore:     database.NewDocumentStore("carts_nosql.json"),
@@ -50,6 +51,7 @@ func NewAppHandler() *AppHandler {
 	return h
 }
 
+// syncAdminAccount
 func (h *AppHandler) syncAdminAccount() {
 	if database.DB == nil {
 		return
@@ -74,6 +76,7 @@ func (h *AppHandler) syncAdminAccount() {
 	}
 }
 
+// RegisterRoutes
 func (h *AppHandler) RegisterRoutes(router *gin.Engine) {
 	router.GET("/", h.RenderIndex)
 	router.GET("/login", h.RenderLogin)
@@ -106,16 +109,38 @@ func (h *AppHandler) RegisterRoutes(router *gin.Engine) {
 	}
 }
 
-func (h *AppHandler) RenderIndex(c *gin.Context)         { c.HTML(http.StatusOK, "index.html", nil) }
-func (h *AppHandler) RenderLogin(c *gin.Context)         { c.HTML(http.StatusOK, "login.html", nil) }
-func (h *AppHandler) RenderUserDashboard(c *gin.Context) { c.HTML(http.StatusOK, "user_dashboard.html", nil) }
-func (h *AppHandler) RenderAdminDashboard(c *gin.Context){ c.HTML(http.StatusOK, "admin_dashboard.html", nil) }
-func (h *AppHandler) RenderCatalog(c *gin.Context)       { c.HTML(http.StatusOK, "catalog.html", nil) }
-func (h *AppHandler) RenderAuthors(c *gin.Context)       { c.HTML(http.StatusOK, "authors.html", nil) }
-func (h *AppHandler) RenderBookDetail(c *gin.Context)    { c.HTML(http.StatusOK, "book_detail.html", nil) }
-func (h *AppHandler) RenderProfile(c *gin.Context)       { c.HTML(http.StatusOK, "profile.html", nil) }
-func (h *AppHandler) RenderCheckout(c *gin.Context)      { c.HTML(http.StatusOK, "checkout.html", nil) }
+// RenderIndex
+func (h *AppHandler) RenderIndex(c *gin.Context) { c.HTML(http.StatusOK, "index.html", nil) }
 
+// RenderLogin
+func (h *AppHandler) RenderLogin(c *gin.Context) { c.HTML(http.StatusOK, "login.html", nil) }
+
+// RenderUserDashboard
+func (h *AppHandler) RenderUserDashboard(c *gin.Context) {
+	c.HTML(http.StatusOK, "user_dashboard.html", nil)
+}
+
+// RenderAdminDashboard
+func (h *AppHandler) RenderAdminDashboard(c *gin.Context) {
+	c.HTML(http.StatusOK, "admin_dashboard.html", nil)
+}
+
+// RenderCatalog
+func (h *AppHandler) RenderCatalog(c *gin.Context) { c.HTML(http.StatusOK, "catalog.html", nil) }
+
+// RenderAuthors
+func (h *AppHandler) RenderAuthors(c *gin.Context) { c.HTML(http.StatusOK, "authors.html", nil) }
+
+// RenderBookDetail
+func (h *AppHandler) RenderBookDetail(c *gin.Context) { c.HTML(http.StatusOK, "book_detail.html", nil) }
+
+// RenderProfile
+func (h *AppHandler) RenderProfile(c *gin.Context) { c.HTML(http.StatusOK, "profile.html", nil) }
+
+// RenderCheckout
+func (h *AppHandler) RenderCheckout(c *gin.Context) { c.HTML(http.StatusOK, "checkout.html", nil) }
+
+// RegisterUser
 func (h *AppHandler) RegisterUser(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -135,6 +160,7 @@ func (h *AppHandler) RegisterUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Registration successful"})
 }
 
+// LoginUser
 func (h *AppHandler) LoginUser(c *gin.Context) {
 	var creds models.User
 	if err := c.ShouldBindJSON(&creds); err != nil {
@@ -155,6 +181,7 @@ func (h *AppHandler) LoginUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "role": role, "username": creds.Username})
 }
 
+// UpdateProfile
 func (h *AppHandler) UpdateProfile(c *gin.Context) {
 	var req struct {
 		Username    string `json:"username"`
@@ -175,6 +202,7 @@ func (h *AppHandler) UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }
 
+// AddToCart
 func (h *AppHandler) AddToCart(c *gin.Context) {
 	var req struct {
 		Username string  `json:"username"`
@@ -226,6 +254,7 @@ func (h *AppHandler) AddToCart(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Added to cart", "cart": items})
 }
 
+// GetCart
 func (h *AppHandler) GetCart(c *gin.Context) {
 	username := c.Param("username")
 	docID := "cart_" + username
@@ -246,6 +275,7 @@ func (h *AppHandler) GetCart(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"cart": items})
 }
 
+// RemoveFromCart
 func (h *AppHandler) RemoveFromCart(c *gin.Context) {
 	var req struct {
 		Username string `json:"username"`
@@ -284,8 +314,9 @@ func (h *AppHandler) RemoveFromCart(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Removed item from cart", "cart": updatedItems})
 }
 
+// GetBooks
 func (h *AppHandler) GetBooks(c *gin.Context) {
-	rows, err := database.DB.Query("SELECT id, title, author, price_per_day, stock, category FROM books")
+	rows, err := database.DB.Query("SELECT id, title, author, price_per_day, stock, category FROM books ORDER BY CAST(SUBSTRING(id, 3) AS UNSIGNED) ASC")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve book list"})
 		return
@@ -299,18 +330,28 @@ func (h *AppHandler) GetBooks(c *gin.Context) {
 	})
 
 	for _, doc := range metaDocs {
-		var meta struct {
-			BookID      string `json:"book_id"`
-			ImageURL    string `json:"image_url"`
-			Description string `json:"description"`
-		}
-		if json.Unmarshal([]byte(doc.Body), &meta) == nil {
-			metaMap[meta.BookID] = struct {
+		if doc.Body != "" {
+			type BookMetaPayload struct {
 				ImageURL    string `json:"image_url"`
 				Description string `json:"description"`
-			}{
-				ImageURL:    meta.ImageURL,
-				Description: meta.Description,
+			}
+
+			var meta BookMetaPayload
+			if json.Unmarshal([]byte(doc.Body), &meta) != nil {
+				var innerJSONStr string
+				if json.Unmarshal([]byte(doc.Body), &innerJSONStr) == nil {
+					json.Unmarshal([]byte(innerJSONStr), &meta)
+				}
+			}
+
+			if meta.ImageURL != "" {
+				metaMap[doc.ID] = struct {
+					ImageURL    string `json:"image_url"`
+					Description string `json:"description"`
+				}{
+					ImageURL:    meta.ImageURL,
+					Description: meta.Description,
+				}
 			}
 		}
 	}
@@ -324,6 +365,7 @@ func (h *AppHandler) GetBooks(c *gin.Context) {
 
 		imgURL := "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=400&q=80"
 		desc := ""
+
 		if m, exists := metaMap[id]; exists {
 			if m.ImageURL != "" {
 				imgURL = m.ImageURL
@@ -336,14 +378,20 @@ func (h *AppHandler) GetBooks(c *gin.Context) {
 		}
 
 		books = append(books, gin.H{
-			"id": id, "title": title, "author": author, "price": price, "stock": stock, "description": desc,
-			"image_url": imgURL,
-			"category":  category,
+			"id":          id,
+			"title":       title,
+			"author":      author,
+			"price":       price,
+			"stock":       stock,
+			"description": desc,
+			"image_url":   imgURL,
+			"category":    category,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"books": books})
 }
 
+// GetBookByID
 func (h *AppHandler) GetBookByID(c *gin.Context) {
 	bookID := c.Param("id")
 	var id, title, author, category string
@@ -359,18 +407,25 @@ func (h *AppHandler) GetBookByID(c *gin.Context) {
 	imgURL := "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=400&q=80"
 	desc := ""
 	metaDocs, _ := h.BookMetaStore.GetAllDocuments()
+
 	for _, doc := range metaDocs {
-		var meta struct {
-			BookID      string `json:"book_id"`
-			ImageURL    string `json:"image_url"`
-			Description string `json:"description"`
-		}
-		if json.Unmarshal([]byte(doc.Body), &meta) == nil && meta.BookID == bookID {
+		if doc.ID == bookID {
+			type BookMetaPayload struct {
+				ImageURL    string `json:"image_url"`
+				Description string `json:"description"`
+			}
+			var meta BookMetaPayload
+			if json.Unmarshal([]byte(doc.Body), &meta) != nil {
+				var innerJSONStr string
+				if json.Unmarshal([]byte(doc.Body), &innerJSONStr) == nil {
+					json.Unmarshal([]byte(innerJSONStr), &meta)
+				}
+			}
 			if meta.ImageURL != "" {
 				imgURL = meta.ImageURL
+				desc = meta.Description
+				break
 			}
-			desc = meta.Description
-			break
 		}
 	}
 
@@ -384,6 +439,7 @@ func (h *AppHandler) GetBookByID(c *gin.Context) {
 	}})
 }
 
+// CreateBook
 func (h *AppHandler) CreateBook(c *gin.Context) {
 	var b struct {
 		ID          string  `json:"id"`
@@ -437,7 +493,7 @@ func (h *AppHandler) CreateBook(c *gin.Context) {
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE title=?, author_id=?, author=?, category_id=?, category=?, price_per_day=?, stock=?;
 	`
-	_, err := database.DB.Exec(query, 
+	_, err := database.DB.Exec(query,
 		bookID, b.Title, authorID, b.Author, categoryID, categoryName, b.Price, b.Stock,
 		b.Title, authorID, b.Author, categoryID, categoryName, b.Price, b.Stock,
 	)
@@ -446,7 +502,7 @@ func (h *AppHandler) CreateBook(c *gin.Context) {
 		return
 	}
 
-	docID := "book_meta_" + bookID
+	docID := bookID
 	metaBytes, _ := json.Marshal(struct {
 		BookID      string `json:"book_id"`
 		Title       string `json:"title"`
@@ -468,6 +524,7 @@ func (h *AppHandler) CreateBook(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Book saved & NoSQL synchronized successfully", "book_id": bookID})
 }
 
+// DeleteBook
 func (h *AppHandler) DeleteBook(c *gin.Context) {
 	var req struct {
 		ID string `json:"id"`
@@ -483,7 +540,7 @@ func (h *AppHandler) DeleteBook(c *gin.Context) {
 		return
 	}
 
-	docID := "book_meta_" + req.ID
+	docID := req.ID
 	_ = h.BookMetaStore.SaveDocument(models.ContentDocument{
 		ID:    docID,
 		Title: "Deleted Meta",
@@ -493,6 +550,7 @@ func (h *AppHandler) DeleteBook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Book deleted successfully"})
 }
 
+// GetBookReviews
 func (h *AppHandler) GetBookReviews(c *gin.Context) {
 	bookID := c.Param("book_id")
 	docs, _ := h.ReviewStore.GetAllDocuments()
@@ -506,6 +564,7 @@ func (h *AppHandler) GetBookReviews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"reviews": reviews})
 }
 
+// AddBookReview
 func (h *AppHandler) AddBookReview(c *gin.Context) {
 	var req struct {
 		BookID   string `json:"book_id"`
@@ -549,7 +608,7 @@ func (h *AppHandler) AddBookReview(c *gin.Context) {
 	reviews = append(reviews, newReview)
 
 	dataBytes, _ := json.Marshal(reviews)
-	
+
 	h.ReviewStore.SaveDocument(models.ContentDocument{
 		ID:    targetID,
 		Title: "Reviews for " + req.BookID,
@@ -559,6 +618,7 @@ func (h *AppHandler) AddBookReview(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"reviews": reviews})
 }
 
+// CreateCategory
 func (h *AppHandler) CreateCategory(c *gin.Context) {
 	var req struct {
 		Name string `json:"name"`
@@ -582,6 +642,7 @@ func (h *AppHandler) CreateCategory(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Category saved successfully", "id": catID})
 }
 
+// CreateAuthor
 func (h *AppHandler) CreateAuthor(c *gin.Context) {
 	var req struct {
 		Name string `json:"name"`
@@ -604,6 +665,7 @@ func (h *AppHandler) CreateAuthor(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Author saved successfully", "id": authorID})
 }
 
+// ProcessCheckout
 func (h *AppHandler) ProcessCheckout(c *gin.Context) {
 	var req struct {
 		Username string `json:"username"`

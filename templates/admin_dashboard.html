@@ -83,7 +83,7 @@
         <h1>🛠️ GoBook Admin Control Panel</h1>
         <div style="display: flex; gap: 15px; align-items: center;">
             <button class="btn-add-top" onclick="openAddBookModal()">+ Add New Book</button>
-            <a href="/" style="color: #e74c3c; text-decoration: none; font-weight: bold;">Logout</a>
+            <a href="#" onclick="handleLogout(event)" style="color: #e74c3c; text-decoration: none; font-weight: bold; cursor: pointer;">Logout</a>
         </div>
     </div>
 
@@ -151,9 +151,8 @@
             <label>Stock Quantity:</label>
             <input type="number" id="modalStock" placeholder="Example: 10">
             
-            <label>Image (Upload file or paste URL):</label>
-            <input type="file" id="modalImageFile" accept="image/*" style="margin-bottom: 5px;">
-            <input type="text" id="modalImageUrl" placeholder="Or paste image URL...">
+            <label>Image URL:</label>
+            <input type="text" id="modalImageUrl" placeholder="Paste image URL here...">
             
             <label>Description:</label>
             <textarea id="modalDesc" placeholder="Enter detailed description..."></textarea>
@@ -189,6 +188,7 @@
                 <button class="btn-modal-save" onclick="saveSingleEditName()">Save</button>
             </div>
         </div>
+    </div>
 
     <script>
         let allBooks = [];
@@ -198,6 +198,15 @@
         const itemsPerPage = 24;
         let currentPage = 1;
         let activeManageType = '';
+
+        // handleLogout
+        function handleLogout(event) {
+            event.preventDefault();
+            localStorage.removeItem('username');
+            localStorage.removeItem('role');
+            localStorage.removeItem('goBookUser');
+            window.location.replace('/');
+        }
 
         // fetchAdminBooks
         async function fetchAdminBooks() {
@@ -308,7 +317,6 @@
             filterAuthorSuggestions();
         }
 
-        // Window click listener to close dropdown
         window.addEventListener('click', (e) => {
             if (!e.target.closest('#modalAuthorSearch') && !e.target.closest('#authorDropdown')) {
                 const dropdown = document.getElementById('authorDropdown');
@@ -446,7 +454,7 @@
             }
         }
 
-        // addNewCatFromModal (Gửi HTTP POST để lưu dữ liệu vào MySQL)
+        // addNewCatFromModal
         async function addNewCatFromModal() {
             const input = document.getElementById('newCatInputModal');
             const val = input.value.trim();
@@ -469,9 +477,9 @@
                         li.onclick = (e) => filterAdminCategory(val, li);
                         catList.appendChild(li);
                         renderCategoryDropdown();
-                        alert(`Added category "${val}" to MySQL database successfully!`);
+                        alert(`Added category "${val}" successfully!`);
                     } else {
-                        alert("Failed to save category to database.");
+                        alert("Failed to save category.");
                     }
                 } catch (err) {
                     console.error("Error adding category:", err);
@@ -488,9 +496,9 @@
                             uniqueAuthors.push(val);
                         }
                         renderAdminAuthorSidebar(uniqueAuthors);
-                        alert(`Added author "${val}" to MySQL database successfully!`);
+                        alert(`Added author "${val}" successfully!`);
                     } else {
-                        alert("Failed to save author to database.");
+                        alert("Failed to save author.");
                     }
                 } catch (err) {
                     console.error("Error adding author:", err);
@@ -569,7 +577,7 @@
 
         // confirmDeleteCategory
         function confirmDeleteCategory(type, name) {
-            if (!confirm("All related books will also be deleted!!!")) return;
+            if (!confirm("All related books will also be deleted!")) return;
 
             if (type === 'product') {
                 productCategories = productCategories.filter(c => c !== name);
@@ -593,7 +601,7 @@
             filteredBooks = [...allBooks];
             renderAdminPage(currentPage);
             renderCatModalList();
-            alert("Deleted successfully along with related books!");
+            alert("Deleted successfully!");
         }
 
         // openAddBookModal
@@ -605,7 +613,6 @@
             document.getElementById('modalPrice').value = "";
             document.getElementById('modalStock').value = "";
             document.getElementById('modalImageUrl').value = "";
-            document.getElementById('modalImageFile').value = "";
             document.getElementById('modalDesc').value = "";
             document.getElementById('bookModalTitle').innerText = "Add New Book";
             document.getElementById('bookModal').style.display = 'flex';
@@ -623,7 +630,6 @@
             document.getElementById('modalPrice').value = book.price;
             document.getElementById('modalStock').value = book.stock;
             document.getElementById('modalImageUrl').value = book.image_url || '';
-            document.getElementById('modalImageFile').value = "";
             document.getElementById('modalDesc').value = book.description || '';
             document.getElementById('bookModalTitle').innerText = "Edit Book Information";
             document.getElementById('bookModal').style.display = 'flex';
@@ -643,25 +649,14 @@
             const price = parseFloat(document.getElementById('modalPrice').value) || 0;
             const stock = parseInt(document.getElementById('modalStock').value) || 1;
             const description = document.getElementById('modalDesc').value;
-            
-            let imageUrl = document.getElementById('modalImageUrl').value;
-            const imageFile = document.getElementById('modalImageFile').files[0];
+            const imageUrl = document.getElementById('modalImageUrl').value.trim();
 
             if (!title || !author) {
                 alert("Please enter both book title and author!");
                 return;
             }
 
-            if (imageFile) {
-                const reader = new FileReader();
-                reader.readAsDataURL(imageFile);
-                reader.onload = async function () {
-                    imageUrl = reader.result;
-                    await submitBookPayload(editId, title, category, author, price, stock, description, imageUrl);
-                };
-            } else {
-                await submitBookPayload(editId, title, category, author, price, stock, description, imageUrl);
-            }
+            await submitBookPayload(editId, title, category, author, price, stock, description, imageUrl);
         }
 
         // submitBookPayload
@@ -709,6 +704,16 @@
                 alert("Connection error when deleting book.");
             }
         }
+
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted || (performance.getEntriesByType("navigation")[0] && performance.getEntriesByType("navigation")[0].type === "back_forward")) {
+                const currentUser = localStorage.getItem("username") || localStorage.getItem("goBookUser");
+                const currentRole = localStorage.getItem("role");
+                if (!currentUser || currentRole !== 'admin') {
+                    window.location.replace('/');
+                }
+            }
+        });
 
         fetchAdminBooks();
     </script>

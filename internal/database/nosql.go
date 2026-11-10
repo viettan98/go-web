@@ -2,6 +2,7 @@ package database
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"os"
 	"sync"
 	"time"
@@ -50,7 +51,13 @@ type AdminAuditLog struct {
 	Timestamp     string `json:"timestamp"`
 }
 
-func NewDocumentStore(filePath string) *DocumentStore {
+func NewDocumentStore(fileName string) *DocumentStore {
+	dataDir := "data"
+	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
+		os.MkdirAll(dataDir, 0755)
+	}
+	
+	filePath := filepath.Join(dataDir, fileName)
 	return &DocumentStore{filePath: filePath}
 }
 
