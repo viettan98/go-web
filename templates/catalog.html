@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Catalog - GoBook</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="nav-brand">📚 GoBook</a>
+        
+        <div class="nav-search">
+            <input type="text" id="searchInput" placeholder="Search books, authors..." onkeyup="filterBooks()">
+            <button onclick="filterBooks()">🔍</button>
+        </div>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/catalog" style="color: #1abc9c; font-weight: bold;">Catalog</a>
+            <a href="/authors">Authors</a>
+            <a href="/login" class="btn-auth">Login / Register</a>
+        </div>
+    </nav>
+
+    <div class="catalog-container">
+        
+        <div class="sidebar-category">
+            <h3>📂 Product Categories</h3>
+            <ul class="category-list" id="categoryList">
+                <li class="active" onclick="selectCategory('All', this)">All Categories</li>
+                <li onclick="selectCategory('Programming', this)">Programming Books</li>
+                <li onclick="selectCategory('Life Skills', this)">Life Skills</li>
+                <li onclick="selectCategory('Literature', this)">Literature & Novels</li>
+                <li onclick="selectCategory('Economics', this)">Economics & Startup</li>
+            </ul>
+        </div>
+
+        <div>
+            <h2 style="margin-top: 0; color: #2c3e50;">Book Catalog List</h2>
+            
+            <div id="catalogGrid" class="catalog-book-grid">
+                <p style="color: #7f8c8d;">Loading catalog...</p>
+            </div>
+
+            <div id="paginationContainer" class="pagination-container"></div>
+        </div>
+
+    </div>
+
+    <footer>
+    </footer>
+
+    <script>
+        let allBooks = [];
+        let filteredBooks = [];
+        const itemsPerPage = 24;
+        let currentPage = 1;
+        let currentCategory = 'All';
+
+        // fetchCatalogBooks
+        async function fetchCatalogBooks() {
+            try {
+                const res = await fetch('/api/books');
+                const data = await res.json();
+                allBooks = data.books || [];
+                filteredBooks = [...allBooks];
+                renderCatalogPage(currentPage);
+            } catch (err) {
+                console.error("Error loading catalog", err);
+            }
+        }
+
+        // renderCatalogPage
+        function renderCatalogPage(page) {
+            currentPage = page;
+            const grid = document.getElementById('catalogGrid');
+            grid.innerHTML = '';
+
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageBooks = filteredBooks.slice(start, end);
+
+            if (pageBooks.length === 0) {
+                grid.innerHTML = '<p style="color: #7f8c8d; grid-column: span 3; text-align: center;">No matching books found.</p>';
+                document.getElementById('paginationContainer').innerHTML = '';
+                return;
+            }
+
+            pageBooks.forEach(async (book) => {
+                const card = document.createElement('div');
+                card.className = 'book-card';
+
+                card.onclick = (e) => {
+                    if (e.target.closest('button')) return;
+                    window.location.href = `/book/${book.id}`;
+                };
+                
+                const coverImg = book.image_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=400&q=80';
+                const category = book.category || 'Programming & Tech';
+
+                card.innerHTML = `
+                    <div class="book-img-container">
+                        <img src="${coverImg}" alt="${book.title}">
+                    </div>
+                    <div class="book-info">
+                        <div class="book-category">${category}</div>
+                        <h3 class="book-title">${book.title}</h3>
+                        <div class="book-rating" id="rating-${book.id}">
+                            ★★★★★ <span>(0 reviews)</span>
+                        </div>
+                        <div class="book-card-footer">
+                            <span class="book-price">$${book.price}</span>
+                            <button class="btn-cart" onclick="quickAddToCart('${book.id}', '${book.title.replace(/'/g, "\\'")}', ${book.price}, event)" title="Add to cart">
+                                🛒
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+
+                try {
+                    const revRes = await fetch(`/api/reviews/${book.id}`);
+                    const revData = await revRes.json();
+                    const reviews = revData.reviews || [];
+                    
+                    const ratingContainer = document.getElementById(`rating-${book.id}`);
+                    if (ratingContainer) {
+                        if (reviews.length > 0) {
+                            const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+                            const avg = (sum / reviews.length).toFixed(1);
+                            const filledStars = Math.round(sum / reviews.length);
+                            const stars = '★'.repeat(filledStars) + '☆'.repeat(5 - filledStars);
+                            ratingContainer.innerHTML = `${stars} <span style="font-weight:bold; color:#e67e22;">${avg}</span> <span>(${reviews.length})</span>`;
+                        } else {
+                            ratingContainer.innerHTML = `★★★★★ <span>(0)</span>`;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Could not load reviews for book", book.id);
+                }
+            });
+
+            renderCatalogPagination();
+        }
+
+        // renderCatalogPagination
+        function renderCatalogPagination() {
+            const paginationContainer = document.getElementById('paginationContainer');
+            paginationContainer.innerHTML = '';
+
+            const totalPages = Math.ceil(filteredBooks.length / itemsPerPage);
+            if (totalPages <= 1) return;
+
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerText = '« Previous';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => renderCatalogPage(currentPage - 1);
+            paginationContainer.appendChild(prevBtn);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                btn.innerText = i;
+                btn.onclick = () => renderCatalogPage(i);
+                paginationContainer.appendChild(btn);
+            }
+
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerText = 'Next »';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => renderCatalogPage(currentPage + 1);
+            paginationContainer.appendChild(nextBtn);
+        }
+
+        // selectCategory
+        function selectCategory(category, element) {
+            currentCategory = category;
+            
+            document.querySelectorAll('.category-list li').forEach(li => li.classList.remove('active'));
+            element.classList.add('active');
+
+            if (category === 'All') {
+                filteredBooks = [...allBooks];
+            } else {
+                filteredBooks = allBooks.filter(b => (b.category || '').toLowerCase().includes(category.toLowerCase()));
+            }
+            renderCatalogPage(1);
+        }
+
+        // filterBooks
+        function filterBooks() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            filteredBooks = allBooks.filter(b => 
+                b.title.toLowerCase().includes(keyword) || 
+                b.author.toLowerCase().includes(keyword)
+            );
+            renderCatalogPage(1);
+        }
+
+        // setupNavbarAuth
+        async function setupNavbarAuth() {
+            const currentUser = localStorage.getItem("goBookUser");
+            const linksContainers = document.querySelectorAll(".nav-links");
+
+            linksContainers.forEach(container => {
+                const authBtn = container.querySelector(".btn-auth");
+                if (authBtn) authBtn.remove();
+
+                if (currentUser) {
+                    const userCartDiv = document.createElement("div");
+                    userCartDiv.className = "user-cart-area";
+                    userCartDiv.style.display = "flex";
+                    userCartDiv.style.alignItems = "center";
+                    userCartDiv.style.gap = "15px";
+                    userCartDiv.innerHTML = `
+                        <div class="cart-wrapper">
+                            <button class="cart-icon-btn" id="cartToggleBtn" title="Cart">
+                                🛒 <span id="cartBadge" class="cart-badge">0</span>
+                            </button>
+                            <div class="cart-modal" id="cartModalBox">
+                                <h4 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:8px; color:#2c3e50;">Temporary Cart</h4>
+                                <div id="cartItemList" style="max-height: 220px; overflow-y: auto;">
+                                    <p style="color: #7f8c8d; font-size: 0.9rem; text-align: center;">Cart is empty</p>
+                                </div>
+                                <a href="/checkout" class="btn-checkout">Proceed to Checkout</a>
+                            </div>
+                        </div>
+                        <a href="/profile" class="user-icon-btn" title="Profile">${currentUser.charAt(0).toUpperCase()}</a>
+                    `;
+                    container.appendChild(userCartDiv);
+                    
+                    const cartToggleBtn = document.getElementById("cartToggleBtn");
+                    const cartModalBox = document.getElementById("cartModalBox");
+
+                    cartToggleBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        cartModalBox.classList.toggle("show");
+                    });
+
+                    window.addEventListener("click", (e) => {
+                        if (!cartModalBox.contains(e.target) && !cartToggleBtn.contains(e.target)) {
+                            cartModalBox.classList.remove("show");
+                        }
+                    });
+
+                    loadUserCart(currentUser);
+                } else {
+                    const loginA = document.createElement("a");
+                    loginA.href = "/login";
+                    loginA.className = "btn-auth";
+                    loginA.innerText = "Login / Register";
+                    container.appendChild(loginA);
+                }
+            });
+        }
+
+        // loadUserCart
+        async function loadUserCart(username) {
+            try {
+                const res = await fetch(`/api/cart/${username}`);
+                const data = await res.json();
+                const cart = data.cart || [];
+                
+                const badge = document.getElementById("cartBadge");
+                if (badge) badge.innerText = cart.length;
+
+                const itemList = document.getElementById("cartItemList");
+                if (itemList) {
+                    if (cart.length > 0) {
+                        itemList.innerHTML = "";
+                        cart.forEach(item => {
+                            const row = document.createElement("div");
+                            row.className = "cart-item-row";
+                            row.innerHTML = `
+                                <div class="cart-item-info" title="${item.title}">
+                                    <b>${item.title}</b> (x${item.quantity})<br>
+                                    <span style="color:#e74c3c; font-size: 0.85rem;">$${item.price * item.quantity}</span>
+                                </div>
+                                <button class="btn-remove-item" onclick="removeCartItem('${username}', '${item.book_id}')" title="Remove book">🗑️</button>
+                            `;
+                            itemList.appendChild(row);
+                        });
+                    } else {
+                        itemList.innerHTML = '<p style="color: #7f8c8d; font-size: 0.9rem; text-align: center;">Cart is empty</p>';
+                    }
+                }
+            } catch (e) {
+                console.error("Error loading cart", e);
+            }
+        }
+
+        // removeCartItem
+        async function removeCartItem(username, bookId) {
+            try {
+                const res = await fetch('/api/cart/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, book_id: bookId })
+                });
+
+                if (res.ok) {
+                    loadUserCart(username);
+                } else {
+                    alert("Could not remove item from cart.");
+                }
+            } catch (err) {
+                console.error("Error removing from cart:", err);
+            }
+        }
+
+        // quickAddToCart
+        async function quickAddToCart(bookId, title, price, event) {
+            if (event) event.stopPropagation();
+
+            const currentUser = localStorage.getItem("goBookUser");
+            if (!currentUser) {
+                alert("Please log in to add books to your cart!");
+                window.location.href = "/login";
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/cart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUser,
+                        book_id: bookId,
+                        title: title,
+                        price: price,
+                        quantity: 1
+                    })
+                });
+
+                if (res.ok) {
+                    alert(`Added book "${title}" to cart successfully!`);
+                    loadUserCart(currentUser);
+                } else {
+                    alert("Could not add to cart.");
+                }
+            } catch (err) {
+                console.error("Error adding to cart:", err);
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", setupNavbarAuth);
+        fetchCatalogBooks();
+    </script>
+</body>
+</html>

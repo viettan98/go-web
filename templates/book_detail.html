@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Detail - GoBook</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="nav-brand">📚 GoBook</a>
+        
+        <div class="nav-search">
+            <input type="text" id="searchInput" placeholder="Search books, authors...">
+            <button onclick="searchBooks()">🔍</button>
+        </div>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/catalog">Catalog</a>
+            <a href="/authors">Authors</a>
+            <a href="/login" class="btn-auth">Login / Register</a>
+        </div>
+    </nav>
+
+    <div class="detail-container">
+        <div class="detail-img-box">
+            <img id="bookImage" src="" alt="Book Cover">
+        </div>
+
+        <div class="detail-info">
+            <div id="bookCategory" style="color: #7f8c8d; font-size: 0.85rem; text-transform: uppercase; font-weight: bold;"></div>
+            <h1 id="bookTitle">Loading...</h1>
+            <p id="bookAuthor" style="color: #e67e22; font-weight: 500; font-size: 1.1rem;"></p>
+            
+            <div id="bookRatingSummary" class="book-rating" style="font-size: 1rem;">
+                ★★★★★ <span id="reviewCountText">(0 reviews)</span>
+            </div>
+
+            <div class="detail-price" id="bookPrice">$0</div>
+
+            <div class="action-box">
+                <div class="qty-selector">
+                    <button onclick="decreaseQty()">-</button>
+                    <input type="text" id="qtyInput" value="1" readonly>
+                    <button onclick="increaseQty()">+</button>
+                </div>
+                <button class="btn-add-cart" onclick="addToCart()">Add to Cart</button>
+                <button class="btn-buy-now" onclick="buyNow()">Buy Now</button>
+            </div>
+
+            <p><b>Status:</b> <span style="color: #27ae60; font-weight: bold;">In Stock</span></p>
+        </div>
+    </div>
+
+    <div class="tabs-section">
+        <div class="tab-buttons">
+            <button class="tab-btn active" id="btnTabDesc" onclick="switchTab('desc')">Description</button>
+            <button class="tab-btn" id="btnTabReviews" onclick="switchTab('reviews')">Reviews (<span id="tabReviewCount">0</span>)</button>
+        </div>
+
+        <div class="tab-content" id="tabContentDesc">
+            <h3 style="margin-top: 0; color: #2c3e50;">Book Overview</h3>
+            <p id="bookDescription" style="line-height: 1.6; color: #555;">Loading description...</p>
+        </div>
+
+        <div class="tab-content" id="tabContentReviews" style="display: none;">
+            <h3 style="margin-top: 0; color: #2c3e50;">Customer Reviews</h3>
+            
+            <div id="reviewsListContainer">
+                <p style="color: #7f8c8d;">No reviews yet.</p>
+            </div>
+
+            <div id="reviewPagination" class="pagination-container" style="margin: 20px 0;"></div>
+
+            <div class="add-review-box">
+                <h4 style="margin-top: 0; color: #2c3e50;">Add Your Review</h4>
+                <div style="margin-bottom: 10px;">
+                    <label>Rating (Stars): </label>
+                    <select id="newRating" style="padding: 5px; font-size: 1rem;">
+                        <option value="5">⭐⭐⭐⭐⭐ (5 stars)</option>
+                        <option value="4">⭐⭐⭐⭐ (4 stars)</option>
+                        <option value="3">⭐⭐⭐ (3 stars)</option>
+                        <option value="2">⭐⭐ (2 stars)</option>
+                        <option value="1">⭐ (1 star)</option>
+                    </select>
+                </div>
+                <textarea id="newComment" placeholder="Write your review about this book..."></textarea>
+                <button class="btn-add-cart" onclick="submitReview()">Submit Review</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+    </footer>
+
+    <script>
+        const pathParts = window.location.pathname.split('/');
+        const bookId = pathParts[pathParts.length - 1];
+
+        let currentBook = null;
+        let allReviews = [];
+        let currentReviewPage = 1;
+        const reviewsPerPage = 5;
+
+        // fetchBookDetail
+        async function fetchBookDetail() {
+            try {
+                const res = await fetch(`/api/books/${bookId}`);
+                const data = await res.json();
+                if (res.ok) {
+                    currentBook = data.book;
+                    document.getElementById('bookTitle').innerText = currentBook.title;
+                    document.getElementById('bookAuthor').innerText = `Author: ${currentBook.author}`;
+                    document.getElementById('bookPrice').innerText = `$${currentBook.price}`;
+                    document.getElementById('bookDescription').innerText = currentBook.description || 'No description available for this book.';
+                    document.getElementById('bookCategory').innerText = currentBook.category;
+                    document.getElementById('bookImage').src = currentBook.image_url;
+                } else {
+                    document.querySelector('.detail-container').innerHTML = '<h2>Book information not found.</h2>';
+                }
+            } catch (err) {
+                console.error("Error loading book detail", err);
+            }
+        }
+
+        // fetchReviews
+        async function fetchReviews() {
+            try {
+                const res = await fetch(`/api/reviews/${bookId}`);
+                const data = await res.json();
+                allReviews = data.reviews || [];
+                
+                document.getElementById('tabReviewCount').innerText = allReviews.length;
+                document.getElementById('reviewCountText').innerText = `(${allReviews.length} reviews)`;
+                
+                const ratingSummaryBox = document.getElementById('bookRatingSummary');
+                if (allReviews.length > 0) {
+                    const totalScore = allReviews.reduce((sum, r) => sum + r.rating, 0);
+                    const avgRating = (totalScore / allReviews.length).toFixed(1);
+                    const filledStars = Math.round(totalScore / allReviews.length);
+                    const stars = '★'.repeat(filledStars) + '☆'.repeat(5 - filledStars);
+                    
+                    ratingSummaryBox.innerHTML = `${stars} <span style="font-weight:bold; color:#e67e22;">${avgRating} / 5</span> <span id="reviewCountText">(${allReviews.length} reviews)</span>`;
+                } else {
+                    ratingSummaryBox.innerHTML = `★★★★★ <span id="reviewCountText">(0 reviews)</span>`;
+                }
+
+                renderReviewPage(1);
+            } catch (err) {
+                console.error("Error loading reviews", err);
+            }
+        }
+
+        // renderReviewPage
+        function renderReviewPage(page) {
+            currentReviewPage = page;
+            const container = document.getElementById('reviewsListContainer');
+            container.innerHTML = '';
+
+            if (allReviews.length === 0) {
+                container.innerHTML = '<p style="color: #7f8c8d;">No reviews for this book yet.</p>';
+                document.getElementById('reviewPagination').innerHTML = '';
+                return;
+            }
+
+            const start = (page - 1) * reviewsPerPage;
+            const end = start + reviewsPerPage;
+            const pageReviews = allReviews.slice(start, end);
+
+            pageReviews.forEach(rev => {
+                const div = document.createElement('div');
+                div.className = 'review-item';
+                const stars = '★'.repeat(rev.rating) + '☆'.repeat(5 - rev.rating);
+
+                div.innerHTML = `
+                    <div class="review-author">${rev.username}</div>
+                    <div class="review-stars">${stars}</div>
+                    <div class="review-comment">${rev.comment}</div>
+                `;
+                container.appendChild(div);
+            });
+
+            renderReviewPagination();
+        }
+
+        // renderReviewPagination
+        function renderReviewPagination() {
+            const paginationContainer = document.getElementById('reviewPagination');
+            paginationContainer.innerHTML = '';
+
+            const totalPages = Math.ceil(allReviews.length / reviewsPerPage);
+            if (totalPages <= 1) return;
+
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${i === currentReviewPage ? 'active' : ''}`;
+                btn.innerText = i;
+                btn.onclick = () => renderReviewPage(i);
+                paginationContainer.appendChild(btn);
+            }
+        }
+
+        // submitReview
+        async function submitReview() {
+            const currentUser = localStorage.getItem("goBookUser");
+            if (!currentUser) {
+                alert("Please log in to submit a review!");
+                window.location.href = "/login";
+                return;
+            }
+
+            const rating = parseInt(document.getElementById('newRating').value);
+            const comment = document.getElementById('newComment').value;
+
+            if (!comment.trim()) {
+                alert("Please enter review content!");
+                return;
+            }
+
+            const res = await fetch('/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    book_id: bookId,
+                    username: currentUser,
+                    rating: rating,
+                    comment: comment
+                })
+            });
+
+            if (res.ok) {
+                alert("Review submitted successfully!");
+                document.getElementById('newComment').value = '';
+                fetchReviews();
+            } else {
+                alert("Failed to submit review.");
+            }
+        }
+
+        // increaseQty
+        function increaseQty() {
+            const input = document.getElementById('qtyInput');
+            input.value = parseInt(input.value) + 1;
+        }
+
+        // decreaseQty
+        function decreaseQty() {
+            const input = document.getElementById('qtyInput');
+            input.value = Math.max(1, parseInt(input.value) - 1);
+        }
+
+        // addToCart
+        async function addToCart() {
+            const currentUser = localStorage.getItem("goBookUser");
+            if (!currentUser) {
+                alert("Please log in to add to cart!");
+                window.location.href = "/login";
+                return;
+            }
+
+            if (!currentBook) return;
+            const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+
+            try {
+                const res = await fetch('/api/cart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUser,
+                        book_id: currentBook.id,
+                        title: currentBook.title,
+                        price: currentBook.price,
+                        quantity: qty
+                    })
+                });
+
+                if (res.ok) {
+                    alert(`Added ${qty} copies of "${currentBook.title}" to cart successfully!`);
+                    loadUserCart(currentUser);
+                } else {
+                    alert("Could not add to cart.");
+                }
+            } catch (err) {
+                console.error("Error adding to cart:", err);
+            }
+        }
+
+        // buyNow
+        async function buyNow() {
+            await addToCart();
+            window.location.href = "/checkout";
+        }
+
+        // switchTab
+        function switchTab(tabName) {
+            const btnDesc = document.getElementById('btnTabDesc');
+            const btnReviews = document.getElementById('btnTabReviews');
+            const contentDesc = document.getElementById('tabContentDesc');
+            const contentReviews = document.getElementById('tabContentReviews');
+
+            if (tabName === 'desc') {
+                btnDesc.classList.add('active');
+                btnReviews.classList.remove('active');
+                contentDesc.style.display = 'block';
+                contentReviews.style.display = 'none';
+            } else {
+                btnReviews.classList.add('active');
+                btnDesc.classList.remove('active');
+                contentReviews.style.display = 'block';
+                contentDesc.style.display = 'none';
+            }
+        }
+
+        // setupNavbarAuth
+        async function setupNavbarAuth() {
+            const currentUser = localStorage.getItem("goBookUser");
+            const linksContainers = document.querySelectorAll(".nav-links");
+
+            linksContainers.forEach(container => {
+                const authBtn = container.querySelector(".btn-auth");
+                if (authBtn) authBtn.remove();
+
+                if (currentUser) {
+                    const userCartDiv = document.createElement("div");
+                    userCartDiv.className = "user-cart-area";
+                    userCartDiv.style.display = "flex";
+                    userCartDiv.style.alignItems = "center";
+                    userCartDiv.style.gap = "15px";
+                    userCartDiv.innerHTML = `
+                        <div class="cart-wrapper">
+                            <button class="cart-icon-btn" id="cartToggleBtn" title="Cart">
+                                🛒 <span id="cartBadge" class="cart-badge">0</span>
+                            </button>
+                            <div class="cart-modal" id="cartModalBox">
+                                <h4 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:8px; color:#2c3e50;">Temporary Cart</h4>
+                                <div id="cartItemList" style="max-height: 220px; overflow-y: auto;">
+                                    <p style="color: #7f8c8d; font-size: 0.9rem; text-align: center;">Cart is empty</p>
+                                </div>
+                                <a href="/checkout" class="btn-checkout">Proceed to Checkout</a>
+                            </div>
+                        </div>
+                        <a href="/profile" class="user-icon-btn" title="Profile">${currentUser.charAt(0).toUpperCase()}</a>
+                    `;
+                    container.appendChild(userCartDiv);
+                    
+                    const cartToggleBtn = document.getElementById("cartToggleBtn");
+                    const cartModalBox = document.getElementById("cartModalBox");
+
+                    cartToggleBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        cartModalBox.classList.toggle("show");
+                    });
+
+                    window.addEventListener("click", (e) => {
+                        if (!cartModalBox.contains(e.target) && !cartToggleBtn.contains(e.target)) {
+                            cartModalBox.classList.remove("show");
+                        }
+                    });
+
+                    loadUserCart(currentUser);
+                } else {
+                    const loginA = document.createElement("a");
+                    loginA.href = "/login";
+                    loginA.className = "btn-auth";
+                    loginA.innerText = "Login / Register";
+                    container.appendChild(loginA);
+                }
+            });
+        }
+
+        // loadUserCart
+        async function loadUserCart(username) {
+            try {
+                const res = await fetch(`/api/cart/${username}`);
+                const data = await res.json();
+                const cart = data.cart || [];
+                
+                const badge = document.getElementById("cartBadge");
+                if (badge) badge.innerText = cart.length;
+
+                const itemList = document.getElementById("cartItemList");
+                if (itemList) {
+                    if (cart.length > 0) {
+                        itemList.innerHTML = "";
+                        cart.forEach(item => {
+                            const row = document.createElement("div");
+                            row.className = "cart-item-row";
+                            row.innerHTML = `
+                                <div class="cart-item-info" title="${item.title}">
+                                    <b>${item.title}</b> (x${item.quantity})<br>
+                                    <span style="color:#e74c3c; font-size: 0.85rem;">$${item.price * item.quantity}</span>
+                                </div>
+                                <button class="btn-remove-item" onclick="removeCartItem('${username}', '${item.book_id}')" title="Remove book">🗑️</button>
+                            `;
+                            itemList.appendChild(row);
+                        });
+                    } else {
+                        itemList.innerHTML = '<p style="color: #7f8c8d; font-size: 0.9rem; text-align: center;">Cart is empty</p>';
+                    }
+                }
+            } catch (e) {
+                console.error("Error loading cart", e);
+            }
+        }
+
+        // removeCartItem
+        async function removeCartItem(username, bookId) {
+            try {
+                const res = await fetch('/api/cart/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, book_id: bookId })
+                });
+
+                if (res.ok) {
+                    loadUserCart(username);
+                } else {
+                    alert("Could not remove item from cart.");
+                }
+            } catch (err) {
+                console.error("Error removing from cart:", err);
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", setupNavbarAuth);
+
+        fetchBookDetail();
+        fetchReviews();
+    </script>
+</body>
+</html>

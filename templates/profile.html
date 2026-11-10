@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - GoBook</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">📚 GoBook</a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/catalog">Catalog</a>
+            <a href="#" onclick="logout()" style="color: #e74c3c;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 500px; margin-top: 40px;">
+        <div class="card" style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <h2 style="margin-top: 0; color: #2c3e50;">👤 User Profile</h2>
+            <p><b>Username:</b> <span id="profileUsername"></span></p>
+            <p><b>Role:</b> Member (User)</p>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+            <h3 style="color: #2c3e50; font-size: 1.1rem;">Change New Password</h3>
+            <input type="password" id="newPassword" placeholder="Enter new password..." style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <button onclick="updatePassword()" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%;">Update Password</button>
+            <p id="msg" style="margin-top: 15px; text-align: center; font-weight: bold;"></p>
+        </div>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem("goBookUser");
+        if (!currentUser) {
+            window.location.href = "/login";
+        } else {
+            document.getElementById("profileUsername").innerText = currentUser;
+        }
+
+        // updatePassword
+        async function updatePassword() {
+            const newPassword = document.getElementById("newPassword").value;
+            if (!newPassword) {
+                alert("Please enter a new password!");
+                return;
+            }
+
+            const res = await fetch('/api/profile/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: currentUser, new_password: newPassword })
+            });
+
+            const data = await res.json();
+            const msg = document.getElementById("msg");
+            if (res.ok) {
+                msg.style.color = "green";
+                msg.innerText = "Password updated successfully!";
+                document.getElementById("newPassword").value = "";
+            } else {
+                msg.style.color = "red";
+                msg.innerText = data.error || "Update failed";
+            }
+        }
+
+        // logout
+        function logout() {
+            localStorage.removeItem("goBookUser");
+            window.location.href = "/";
+        }
+    </script>
+</body>
+</html>

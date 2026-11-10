@@ -1,0 +1,8 @@
+data/
+*.json
+
+/bin/
+/vendor/
+*.exe
+*.test
+.DS_Store

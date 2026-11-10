@@ -1,0 +1,4 @@
+title,author,category,price,stock,description,image_url
+"Python for Data Analysis: Data Wrangling with Pandas, NumPy, and IPython",Wes McKinney,Data Science,34.5,12,"Get complete instructions for manipulating, processing, cleaning, and crunching datasets in Python.",https://m.media-amazon.com/images/I/515XdK-YtFL._SY445_SX342_FMwebp_.jpg
+"Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow",Aurélien Géron,Artificial Intelligence,39.99,9,"Through a series of recent breakthroughs, deep learning has boosted the entire field of machine learning.",https://m.media-amazon.com/images/I/51SLnCjnj-L._SY445_SX342_FMwebp_.jpg
+Sapiens: A Brief History of Humankind,Yuval Noah Harari,History,21.0,18,From a renowned historian comes a groundbreaking narrative of humanity's creation and evolution.,https://m.media-amazon.com/images/I/41r9p0w-a2L._SY445_SX342_FMwebp_.jpg

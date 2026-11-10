@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - GoBook Management</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { background-color: #f8f9fa; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .admin-header { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .admin-header h1 { margin: 0; font-size: 1.4rem; }
+        .btn-add-top { background: #27ae60; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
+        .btn-add-top:hover { background: #219653; }
+        .admin-sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #eaeaea; }
+        .admin-sidebar h3 { margin-top: 0; color: #2c3e50; font-size: 1.05rem; border-bottom: 2px solid #1abc9c; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-edit-cat { background: #f39c12; color: white; border: none; padding: 3px 8px; font-size: 0.75rem; border-radius: 3px; cursor: pointer; }
+        .btn-add-inside-modal { background: #27ae60; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 15px; }
+        .admin-card-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-admin-edit { flex: 1; background: #3498db; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-admin-delete { flex: 1; background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 450px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .modal-content input, .modal-content select, .modal-content textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .modal-btns { display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-modal-close { background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .btn-modal-save { background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        
+        .author-dropdown-list {
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 120px;
+            overflow-y: auto;
+            background: white;
+            position: absolute;
+            width: calc(100% - 60px);
+            display: none;
+            z-index: 100;
+            border-radius: 0 0 4px 4px;
+        }
+        .author-dropdown-item {
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .author-dropdown-item:hover {
+            background-color: #f1f2f6;
+        }
+        .manage-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px solid #f1f2f6;
+            font-size: 0.95rem;
+        }
+        .manage-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-item-edit {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-item-delete {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-header">
+        <h1>🛠️ GoBook Admin Control Panel</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <button class="btn-add-top" onclick="openAddBookModal()">+ Add New Book</button>
+            <a href="/" style="color: #e74c3c; text-decoration: none; font-weight: bold;">Logout</a>
+        </div>
+    </div>
+
+    <div class="catalog-container">
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="admin-sidebar">
+                <h3>📂 Product Categories <button class="btn-edit-cat" onclick="openCatModal('product')">Edit</button></h3>
+                <div style="margin-bottom: 10px;">
+                    <input type="text" id="adminProductSearchInput" placeholder="Search product categories..." onkeyup="filterAdminProductCatList()" style="width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 0.85rem; outline: none;">
+                </div>
+                <ul class="category-list" id="adminCatList">
+                    <li class="active" onclick="filterAdminCategory('All', this)">All Categories</li>
+                    <li onclick="filterAdminCategory('Programming Books', this)">Programming Books</li>
+                    <li onclick="filterAdminCategory('Life Skills', this)">Life Skills</li>
+                    <li onclick="filterAdminCategory('Literature', this)">Literature & Novels</li>
+                    <li onclick="filterAdminCategory('Economics', this)">Economics & Startup</li>
+                </ul>
+            </div>
+
+            <div class="admin-sidebar">
+                <h3>✍️ Author Categories <button class="btn-edit-cat" onclick="openCatModal('author')">Edit</button></h3>
+                <div style="margin-bottom: 10px;">
+                    <input type="text" id="adminAuthorSearchInput" placeholder="Search author name..." onkeyup="filterAdminAuthorCatList()" style="width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 0.85rem; outline: none;">
+                </div>
+                <ul class="category-list" id="adminAuthorCatList" style="max-height: 250px; overflow-y: auto;">
+                    <li class="active" onclick="filterAdminAuthor('All', this)">All Authors</li>
+                </ul>
+            </div>
+        </div>
+
+        <div>
+            <h2 id="adminPanelTitle" style="margin-top: 0; color: #2c3e50;">Book Inventory Management</h2>
+            <div id="adminBookGrid" class="catalog-book-grid">
+                <p style="color: #7f8c8d;">Loading book list...</p>
+            </div>
+            <div id="paginationContainer" class="pagination-container"></div>
+        </div>
+    </div>
+
+    <div id="bookModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="bookModalTitle">Add New Book</h3>
+            <input type="hidden" id="editBookId">
+            
+            <label>Book Title:</label>
+            <input type="text" id="modalTitle" placeholder="Enter book title...">
+            
+            <label>Category:</label>
+            <select id="modalCategory">
+                <option value="Programming Books">Programming Books</option>
+                <option value="Life Skills">Life Skills</option>
+                <option value="Literature">Literature & Novels</option>
+                <option value="Economics">Economics & Startup</option>
+            </select>
+
+            <label>Author (Search or select from DB):</label>
+            <div style="position: relative;">
+                <input type="text" id="modalAuthorSearch" placeholder="Type to search author..." onkeyup="filterAuthorSuggestions()" onfocus="showAuthorSuggestions()" autocomplete="off">
+                <div id="authorDropdown" class="author-dropdown-list"></div>
+            </div>
+
+            <label>Price ($):</label>
+            <input type="number" id="modalPrice" placeholder="Example: 5">
+            
+            <label>Stock Quantity:</label>
+            <input type="number" id="modalStock" placeholder="Example: 10">
+            
+            <label>Image (Upload file or paste URL):</label>
+            <input type="file" id="modalImageFile" accept="image/*" style="margin-bottom: 5px;">
+            <input type="text" id="modalImageUrl" placeholder="Or paste image URL...">
+            
+            <label>Description:</label>
+            <textarea id="modalDesc" placeholder="Enter detailed description..."></textarea>
+            
+            <div class="modal-btns">
+                <button class="btn-modal-close" onclick="closeBookModal()">Cancel</button>
+                <button class="btn-modal-save" onclick="saveBookData()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="catModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="catModalTitle">Edit Categories</h3>
+            <div id="catModalBody">
+                <p>Manage categories configuration here.</p>
+            </div>
+            <div class="modal-btns" style="margin-top: 15px;">
+                <button class="btn-modal-close" onclick="closeCatModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="singleEditModal" class="modal-overlay">
+        <div class="modal-content" style="width: 350px;">
+            <h3 id="singleEditTitle">Edit Name</h3>
+            <input type="hidden" id="singleEditType">
+            <input type="hidden" id="singleEditOldName">
+            <label>New Name:</label>
+            <input type="text" id="singleEditInput" placeholder="Enter new name...">
+            <div class="modal-btns">
+                <button class="btn-modal-close" onclick="closeSingleEditModal()">Cancel</button>
+                <button class="btn-modal-save" onclick="saveSingleEditName()">Save</button>
+            </div>
+        </div>
+
+    <script>
+        let allBooks = [];
+        let filteredBooks = [];
+        let uniqueAuthors = [];
+        let productCategories = ['Programming Books', 'Life Skills', 'Literature', 'Economics'];
+        const itemsPerPage = 24;
+        let currentPage = 1;
+        let activeManageType = '';
+
+        // fetchAdminBooks
+        async function fetchAdminBooks() {
+            try {
+                const res = await fetch('/api/books');
+                const data = await res.json();
+                allBooks = data.books || [];
+                filteredBooks = [...allBooks];
+
+                const authorSet = new Set();
+                allBooks.forEach(book => {
+                    if (book.author) authorSet.add(book.author);
+                });
+                uniqueAuthors = Array.from(authorSet);
+                renderAdminAuthorSidebar(uniqueAuthors);
+                renderCategoryDropdown();
+
+                renderAdminPage(currentPage);
+            } catch (err) {
+                console.error("Error loading books", err);
+            }
+        }
+
+        // renderCategoryDropdown
+        function renderCategoryDropdown() {
+            const select = document.getElementById('modalCategory');
+            select.innerHTML = '';
+            productCategories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.innerText = cat;
+                select.appendChild(opt);
+            });
+        }
+
+        // renderAdminPage
+        function renderAdminPage(page) {
+            currentPage = page;
+            const grid = document.getElementById('adminBookGrid');
+            grid.innerHTML = '';
+            const pageBooks = filteredBooks.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+            if (pageBooks.length === 0) {
+                grid.innerHTML = '<p style="color: #7f8c8d; grid-column: span 3; text-align: center;">No books found.</p>';
+                return;
+            }
+
+            pageBooks.forEach(book => {
+                const card = document.createElement('div');
+                card.className = 'book-card';
+                card.innerHTML = `
+                    <div class="book-img-container">
+                        <img src="${book.image_url}" alt="${book.title}">
+                    </div>
+                    <div class="book-info">
+                        <div class="book-category">${book.category || 'Book'}</div>
+                        <h3 class="book-title">${book.title}</h3>
+                        <p style="font-size: 0.85rem; color: #e67e22;"><b>Author:</b> ${book.author}</p>
+                        <p style="font-size: 0.85rem; color: #555;"><b>Stock:</b> ${book.stock} | <b>Price:</b> $${book.price}</p>
+                        <div class="admin-card-actions">
+                            <button class="btn-admin-edit" onclick="openEditBookModal('${book.id}')">Edit</button>
+                            <button class="btn-admin-delete" onclick="confirmDeleteBook('${book.id}', '${book.title.replace(/'/g, "\\'")}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // renderAdminAuthorSidebar
+        function renderAdminAuthorSidebar(authors) {
+            const listContainer = document.getElementById('adminAuthorCatList');
+            listContainer.innerHTML = `<li class="active" onclick="filterAdminAuthor('All', this)">All Authors</li>`;
+            authors.forEach(author => {
+                const li = document.createElement('li');
+                li.innerText = author;
+                li.onclick = (e) => filterAdminAuthor(author, li);
+                listContainer.appendChild(li);
+            });
+        }
+
+        // filterAuthorSuggestions
+        function filterAuthorSuggestions() {
+            const keyword = document.getElementById('modalAuthorSearch').value.toLowerCase();
+            const dropdown = document.getElementById('authorDropdown');
+            const filtered = uniqueAuthors.filter(a => a.toLowerCase().includes(keyword));
+
+            if (filtered.length > 0) {
+                dropdown.innerHTML = '';
+                filtered.forEach(author => {
+                    const div = document.createElement('div');
+                    div.className = 'author-dropdown-item';
+                    div.innerText = author;
+                    div.onclick = () => {
+                        document.getElementById('modalAuthorSearch').value = author;
+                        dropdown.style.display = 'none';
+                    };
+                    dropdown.appendChild(div);
+                });
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        // showAuthorSuggestions
+        function showAuthorSuggestions() {
+            filterAuthorSuggestions();
+        }
+
+        // Window click listener to close dropdown
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('#modalAuthorSearch') && !e.target.closest('#authorDropdown')) {
+                const dropdown = document.getElementById('authorDropdown');
+                if (dropdown) dropdown.style.display = 'none';
+            }
+        });
+
+        // filterAdminCategory
+        function filterAdminCategory(category, element) {
+            document.querySelectorAll('#adminCatList li').forEach(li => li.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            if (category === 'All') {
+                filteredBooks = [...allBooks];
+                document.getElementById('adminPanelTitle').innerText = "Book Inventory Management";
+            } else {
+                filteredBooks = allBooks.filter(b => (b.category || '').toLowerCase().includes(category.toLowerCase()));
+                document.getElementById('adminPanelTitle').innerText = `Category: ${category}`;
+            }
+            renderAdminPage(1);
+        }
+
+        // filterAdminAuthor
+        function filterAdminAuthor(author, element) {
+            document.querySelectorAll('#adminAuthorCatList li').forEach(li => li.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            if (author === 'All') {
+                filteredBooks = [...allBooks];
+                document.getElementById('adminPanelTitle').innerText = "Book Inventory Management";
+            } else {
+                filteredBooks = allBooks.filter(b => b.author === author);
+                document.getElementById('adminPanelTitle').innerText = `Author: ${author}`;
+            }
+            renderAdminPage(1);
+        }
+
+        // filterAdminProductCatList
+        function filterAdminProductCatList() {
+            const keyword = document.getElementById('adminProductSearchInput').value.toLowerCase();
+            const items = document.querySelectorAll('#adminCatList li');
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(keyword) ? 'block' : 'none';
+            });
+        }
+
+        // filterAdminAuthorCatList
+        function filterAdminAuthorCatList() {
+            const keyword = document.getElementById('adminAuthorSearchInput').value.toLowerCase();
+            const filteredAuthors = uniqueAuthors.filter(a => a.toLowerCase().includes(keyword));
+            renderAdminAuthorSidebar(filteredAuthors);
+        }
+
+        // openCatModal
+        function openCatModal(type) {
+            activeManageType = type;
+            const modal = document.getElementById('catModal');
+            const title = document.getElementById('catModalTitle');
+            const body = document.getElementById('catModalBody');
+
+            if (type === 'product') {
+                title.innerText = "Manage Product Categories";
+                body.innerHTML = `
+                    <div style="margin-bottom: 12px;">
+                        <input type="text" id="modalCatSearch" placeholder="Search product categories..." onkeyup="renderCatModalList()" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                        <input type="text" id="newCatInputModal" placeholder="Enter new category name..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 0;">
+                        <button class="btn-add-inside-modal" style="width: auto; margin-bottom: 0; padding: 8px 15px;" onclick="addNewCatFromModal()">Add Category</button>
+                    </div>
+                    <div id="modalCatListContainer" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px;"></div>
+                `;
+                renderCatModalList();
+            } else {
+                title.innerText = "Manage Author Categories";
+                body.innerHTML = `
+                    <div style="margin-bottom: 12px;">
+                        <input type="text" id="modalCatSearch" placeholder="Search author name..." onkeyup="renderCatModalList()" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                        <input type="text" id="newCatInputModal" placeholder="Enter new author name..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 0;">
+                        <button class="btn-add-inside-modal" style="width: auto; margin-bottom: 0; padding: 8px 15px;" onclick="addNewCatFromModal()">Add Author</button>
+                    </div>
+                    <div id="modalCatListContainer" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px;"></div>
+                `;
+                renderCatModalList();
+            }
+            modal.style.display = 'flex';
+        }
+
+        // renderCatModalList
+        function renderCatModalList() {
+            const container = document.getElementById('modalCatListContainer');
+            const searchInput = document.getElementById('modalCatSearch');
+            const keyword = searchInput ? searchInput.value.toLowerCase() : '';
+            container.innerHTML = '';
+
+            if (activeManageType === 'product') {
+                const filtered = productCategories.filter(c => c.toLowerCase().includes(keyword));
+                if (filtered.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 10px;">No categories found.</p>';
+                    return;
+                }
+                filtered.forEach(cat => {
+                    const row = document.createElement('div');
+                    row.className = 'manage-item-row';
+                    row.innerHTML = `
+                        <span>${cat}</span>
+                        <div class="manage-item-actions">
+                            <button class="btn-item-edit" onclick="openSingleEditModal('product', '${cat.replace(/'/g, "\\'")}')">Edit</button>
+                            <button class="btn-item-delete" onclick="confirmDeleteCategory('product', '${cat.replace(/'/g, "\\'")}')">Delete</button>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            } else {
+                const filtered = uniqueAuthors.filter(a => a.toLowerCase().includes(keyword));
+                if (filtered.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 10px;">No authors found.</p>';
+                    return;
+                }
+                filtered.forEach(author => {
+                    const row = document.createElement('div');
+                    row.className = 'manage-item-row';
+                    row.innerHTML = `
+                        <span>${author}</span>
+                        <div class="manage-item-actions">
+                            <button class="btn-item-edit" onclick="openSingleEditModal('author', '${author.replace(/'/g, "\\'")}')">Edit</button>
+                            <button class="btn-item-delete" onclick="confirmDeleteCategory('author', '${author.replace(/'/g, "\\'")}')">Delete</button>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+        }
+
+        // addNewCatFromModal (Gửi HTTP POST để lưu dữ liệu vào MySQL)
+        async function addNewCatFromModal() {
+            const input = document.getElementById('newCatInputModal');
+            const val = input.value.trim();
+            if (!val) return;
+
+            if (activeManageType === 'product') {
+                try {
+                    const res = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: val })
+                    });
+                    if (res.ok) {
+                        if (!productCategories.includes(val)) {
+                            productCategories.push(val);
+                        }
+                        const catList = document.getElementById('adminCatList');
+                        const li = document.createElement('li');
+                        li.innerText = val;
+                        li.onclick = (e) => filterAdminCategory(val, li);
+                        catList.appendChild(li);
+                        renderCategoryDropdown();
+                        alert(`Added category "${val}" to MySQL database successfully!`);
+                    } else {
+                        alert("Failed to save category to database.");
+                    }
+                } catch (err) {
+                    console.error("Error adding category:", err);
+                }
+            } else {
+                try {
+                    const res = await fetch('/api/authors', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: val })
+                    });
+                    if (res.ok) {
+                        if (!uniqueAuthors.includes(val)) {
+                            uniqueAuthors.push(val);
+                        }
+                        renderAdminAuthorSidebar(uniqueAuthors);
+                        alert(`Added author "${val}" to MySQL database successfully!`);
+                    } else {
+                        alert("Failed to save author to database.");
+                    }
+                } catch (err) {
+                    console.error("Error adding author:", err);
+                }
+            }
+
+            input.value = '';
+            renderCatModalList();
+        }
+
+        // closeCatModal
+        function closeCatModal() {
+            document.getElementById('catModal').style.display = 'none';
+        }
+
+        // openSingleEditModal
+        function openSingleEditModal(type, oldName) {
+            document.getElementById('singleEditType').value = type;
+            document.getElementById('singleEditOldName').value = oldName;
+            document.getElementById('singleEditInput').value = oldName;
+            document.getElementById('singleEditTitle').innerText = type === 'product' ? 'Edit Category Name' : 'Edit Author Name';
+            document.getElementById('singleEditModal').style.display = 'flex';
+        }
+
+        // closeSingleEditModal
+        function closeSingleEditModal() {
+            document.getElementById('singleEditModal').style.display = 'none';
+        }
+
+        // saveSingleEditName
+        function saveSingleEditName() {
+            const type = document.getElementById('singleEditType').value;
+            const oldName = document.getElementById('singleEditOldName').value;
+            const newName = document.getElementById('singleEditInput').value.trim();
+
+            if (!newName) {
+                alert("Name cannot be empty!");
+                return;
+            }
+
+            if (type === 'product') {
+                const idx = productCategories.indexOf(oldName);
+                if (idx !== -1) {
+                    productCategories[idx] = newName;
+                }
+                allBooks.forEach(b => {
+                    if (b.category === oldName) b.category = newName;
+                });
+                renderCategoryDropdown();
+                
+                const catList = document.getElementById('adminCatList');
+                catList.innerHTML = `<li class="active" onclick="filterAdminCategory('All', this)">All Categories</li>`;
+                productCategories.forEach(c => {
+                    const li = document.createElement('li');
+                    li.innerText = c;
+                    li.onclick = (e) => filterAdminCategory(c, li);
+                    catList.appendChild(li);
+                });
+            } else {
+                const idx = uniqueAuthors.indexOf(oldName);
+                if (idx !== -1) {
+                    uniqueAuthors[idx] = newName;
+                }
+                allBooks.forEach(b => {
+                    if (b.author === oldName) b.author = newName;
+                });
+                renderAdminAuthorSidebar(uniqueAuthors);
+            }
+
+            filteredBooks = [...allBooks];
+            renderAdminPage(currentPage);
+            closeSingleEditModal();
+            renderCatModalList();
+            alert("Updated successfully!");
+        }
+
+        // confirmDeleteCategory
+        function confirmDeleteCategory(type, name) {
+            if (!confirm("All related books will also be deleted!!!")) return;
+
+            if (type === 'product') {
+                productCategories = productCategories.filter(c => c !== name);
+                allBooks = allBooks.filter(b => b.category !== name);
+                
+                renderCategoryDropdown();
+                const catList = document.getElementById('adminCatList');
+                catList.innerHTML = `<li class="active" onclick="filterAdminCategory('All', this)">All Categories</li>`;
+                productCategories.forEach(c => {
+                    const li = document.createElement('li');
+                    li.innerText = c;
+                    li.onclick = (e) => filterAdminCategory(c, li);
+                    catList.appendChild(li);
+                });
+            } else {
+                uniqueAuthors = uniqueAuthors.filter(a => a !== name);
+                allBooks = allBooks.filter(b => b.author !== name);
+                renderAdminAuthorSidebar(uniqueAuthors);
+            }
+
+            filteredBooks = [...allBooks];
+            renderAdminPage(currentPage);
+            renderCatModalList();
+            alert("Deleted successfully along with related books!");
+        }
+
+        // openAddBookModal
+        function openAddBookModal() {
+            document.getElementById('editBookId').value = "";
+            document.getElementById('modalTitle').value = "";
+            document.getElementById('modalCategory').value = productCategories[0] || "";
+            document.getElementById('modalAuthorSearch').value = "";
+            document.getElementById('modalPrice').value = "";
+            document.getElementById('modalStock').value = "";
+            document.getElementById('modalImageUrl').value = "";
+            document.getElementById('modalImageFile').value = "";
+            document.getElementById('modalDesc').value = "";
+            document.getElementById('bookModalTitle').innerText = "Add New Book";
+            document.getElementById('bookModal').style.display = 'flex';
+        }
+
+        // openEditBookModal
+        function openEditBookModal(bookId) {
+            const book = allBooks.find(b => b.id === bookId);
+            if (!book) return;
+
+            document.getElementById('editBookId').value = book.id;
+            document.getElementById('modalTitle').value = book.title;
+            document.getElementById('modalCategory').value = book.category || productCategories[0];
+            document.getElementById('modalAuthorSearch').value = book.author;
+            document.getElementById('modalPrice').value = book.price;
+            document.getElementById('modalStock').value = book.stock;
+            document.getElementById('modalImageUrl').value = book.image_url || '';
+            document.getElementById('modalImageFile').value = "";
+            document.getElementById('modalDesc').value = book.description || '';
+            document.getElementById('bookModalTitle').innerText = "Edit Book Information";
+            document.getElementById('bookModal').style.display = 'flex';
+        }
+
+        // closeBookModal
+        function closeBookModal() {
+            document.getElementById('bookModal').style.display = 'none';
+        }
+
+        // saveBookData
+        async function saveBookData() {
+            const editId = document.getElementById('editBookId').value;
+            const title = document.getElementById('modalTitle').value;
+            const category = document.getElementById('modalCategory').value;
+            const author = document.getElementById('modalAuthorSearch').value.trim();
+            const price = parseFloat(document.getElementById('modalPrice').value) || 0;
+            const stock = parseInt(document.getElementById('modalStock').value) || 1;
+            const description = document.getElementById('modalDesc').value;
+            
+            let imageUrl = document.getElementById('modalImageUrl').value;
+            const imageFile = document.getElementById('modalImageFile').files[0];
+
+            if (!title || !author) {
+                alert("Please enter both book title and author!");
+                return;
+            }
+
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.readAsDataURL(imageFile);
+                reader.onload = async function () {
+                    imageUrl = reader.result;
+                    await submitBookPayload(editId, title, category, author, price, stock, description, imageUrl);
+                };
+            } else {
+                await submitBookPayload(editId, title, category, author, price, stock, description, imageUrl);
+            }
+        }
+
+        // submitBookPayload
+        async function submitBookPayload(id, title, category, author, price, stock, description, imageUrl) {
+            const payload = {
+                id: id || '',
+                title, category, author, price, stock, description, image_url: imageUrl
+            };
+
+            const res = await fetch('/api/books', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert("Book information saved successfully!");
+                closeBookModal();
+                fetchAdminBooks();
+            } else {
+                alert("Save failed.");
+            }
+        }
+
+        // confirmDeleteBook
+        async function confirmDeleteBook(bookId, bookTitle) {
+            if (!confirm(`Are you sure you want to delete book "${bookTitle}"?`)) return;
+
+            try {
+                const res = await fetch(`/api/books/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: bookId })
+                });
+
+                if (res.ok) {
+                    alert("Book deleted successfully!");
+                    fetchAdminBooks();
+                } else {
+                    const data = await res.json();
+                    alert("Failed to delete book: " + (data.error || "Unknown error"));
+                }
+            } catch (err) {
+                console.error("Error deleting book", err);
+                alert("Connection error when deleting book.");
+            }
+        }
+
+        fetchAdminBooks();
+    </script>
+</body>
+</html>

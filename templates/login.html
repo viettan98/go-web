@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoBook - Login & Register</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f4f7f6; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .auth-card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            width: 380px; 
+            box-sizing: border-box;
+        }
+        h2 { 
+            text-align: center; 
+            color: #2c3e50; 
+            margin-bottom: 20px; 
+        }
+        input { 
+            display: block; 
+            width: 100%; 
+            margin-bottom: 15px; 
+            padding: 12px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            font-size: 0.95rem;
+            outline: none;
+        }
+        input:focus {
+            border-color: #1abc9c;
+        }
+        button { 
+            background: #2980b9; 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            width: 100%; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+        button:hover { 
+            background: #1abc9c; 
+        }
+        .switch-text { 
+            text-align: center; 
+            font-size: 0.9rem; 
+            margin-top: 20px; 
+            color: #666;
+        }
+        .switch-text a { 
+            color: #2980b9; 
+            text-decoration: none; 
+            font-weight: bold; 
+        }
+        .switch-text a:hover { 
+            text-decoration: underline; 
+        }
+        .message { 
+            text-align: center; 
+            font-size: 0.9rem; 
+            margin-top: 15px; 
+            font-weight: bold;
+        }
+        .success { color: #27ae60; }
+        .error { color: #c0392b; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-card">
+        
+        <div id="loginFormContainer">
+            <h2>📚 GoBook Login</h2>
+            <input type="text" id="loginUsername" placeholder="Username">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button onclick="loginUser()">Login</button>
+            
+            <div class="switch-text">
+                Don't have an account? <a href="#" onclick="switchForm('register')">Register now</a>
+            </div>
+        </div>
+
+        <div id="registerFormContainer" style="display: none;">
+            <h2>📝 Account Registration</h2>
+            <input type="text" id="regUsername" placeholder="New username">
+            <input type="password" id="regPassword" placeholder="Password">
+            <input type="password" id="regConfirmPassword" placeholder="Confirm password">
+            <button onclick="registerUser()">Register</button>
+            
+            <div class="switch-text">
+                Already have an account? <a href="#" onclick="switchForm('login')">Login now</a>
+            </div>
+        </div>
+
+        <p id="message" class="message"></p>
+    </div>
+
+    <script>
+        // switchForm
+        function switchForm(formType) {
+            const loginBox = document.getElementById('loginFormContainer');
+            const registerBox = document.getElementById('registerFormContainer');
+            const msg = document.getElementById('message');
+            msg.innerText = "";
+
+            if (formType === 'register') {
+                loginBox.style.display = 'none';
+                registerBox.style.display = 'block';
+            } else {
+                registerBox.style.display = 'none';
+                loginBox.style.display = 'block';
+            }
+        }
+
+        // loginUser
+        async function loginUser() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const msg = document.getElementById('message');
+
+            if (!username || !password) {
+                msg.innerText = "Please enter complete information!";
+                msg.className = "message error";
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    msg.innerText = "Login successful! Redirecting...";
+                    msg.className = "message success";
+                    
+                    localStorage.setItem("goBookUser", username);
+
+                    setTimeout(() => {
+                        if (data.role === 'admin') {
+                            window.location.href = "/admin";
+                        } else {
+                            window.location.href = "/";
+                        }
+                    }, 1000);
+                } else {
+                    msg.innerText = data.error || "Incorrect username or password";
+                    msg.className = "message error";
+                }
+            } catch (err) {
+                console.error(err);
+                msg.innerText = "Connection error to server.";
+                msg.className = "message error";
+            }
+        }
+
+        // registerUser
+        async function registerUser() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const msg = document.getElementById('message');
+
+            if (!username || !password || !confirmPassword) {
+                msg.innerText = "Please fill in all fields!";
+                msg.className = "message error";
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                msg.innerText = "Passwords do not match!";
+                msg.className = "message error";
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    msg.innerText = "Registration successful! Please proceed to login.";
+                    msg.className = "message success";
+                    
+                    document.getElementById('regUsername').value = '';
+                    document.getElementById('regPassword').value = '';
+                    document.getElementById('regConfirmPassword').value = '';
+
+                    setTimeout(() => {
+                        switchForm('login');
+                    }, 1500);
+                } else {
+                    msg.innerText = data.error || "Registration failed (Username might already exist)";
+                    msg.className = "message error";
+                }
+            } catch (err) {
+                console.error(err);
+                msg.innerText = "Connection error to server.";
+                msg.className = "message error";
+            }
+        }
+    </script>
+</body>
+</html>
